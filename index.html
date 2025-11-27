@@ -65,25 +65,30 @@
 </style>
 </head>
 <body>
+
 <div id="welcome" class="center">
   <img id="foto-boda" class="welcome-img" src="https://raw.githubusercontent.com/Ch3lo94/Regalos_Boda/main/images/IMG-20251127-WA0008.jpg">
   <h2>Nos ayudarías mucho con estas cosas que nos faltan ❤️</h2>
   <p>Por favor ingresá con tu cuenta de Google y seleccioná los regalos que deseas darnos.</p>
+
   <div id="g_id_onload"
     data-client_id="342769047778-jc52eh3n59a3vjocagmomi8pln5kbqv3.apps.googleusercontent.com"
     data-callback="handleCredentialResponse">
   </div>
+
   <div class="login-box g_id_signin"
     data-type="standard"
     data-size="large"
     data-theme="filled_blue">
   </div>
 </div>
+
 <div id="catalogo" class="hidden">
   <h1 class="center">Elegí un regalo</h1>
   <div id="grid" class="grid"></div>
   <button id="confirm-btn" disabled>Confirmar selección</button>
 </div>
+
 <script>
 const API = "https://script.google.com/macros/s/AKfycbw152pXv-HCV21cLHtN8DaE8MjaNKbIZXKPOH_lGHoHz4wg53hGGLc--1d_83uu1gtn/exec";
 let usuario = null;
@@ -102,18 +107,21 @@ async function cargarCatalogo() {
   const items = await res.json();
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
+
   items.forEach(item => {
     const card = document.createElement("div");
     card.className = "card";
+
     if (item.stockRestante <= 0) card.classList.add("agotado");
+
     card.innerHTML = `
       <img src="${item.imagen}">
       <div class="card-content">
         <h3>${item.nombre}</h3>
         <p>${item.descripcion || ''}</p>
-        <small>Stock disponible: ${item.stockRestante}</small>
       </div>
     `;
+
     card.onclick = () => toggle(item.id, card);
     grid.appendChild(card);
   });
@@ -127,6 +135,7 @@ function toggle(id, card) {
     seleccion.push(id);
     card.style.border = "3px solid #0077ff";
   }
+
   document.getElementById("confirm-btn").disabled = seleccion.length === 0;
 }
 
@@ -135,7 +144,9 @@ document.getElementById("confirm-btn").onclick = async () => {
     method: "POST",
     body: JSON.stringify({ nombre: usuario.nombre, email: usuario.email, seleccion })
   });
+
   const r = await resp.json();
+
   if (r.success) {
     alert("¡Gracias! Tu elección fue guardada.");
     seleccion = [];
@@ -145,7 +156,6 @@ document.getElementById("confirm-btn").onclick = async () => {
   }
 };
 </script>
+
 </body>
 </html>
-
-
