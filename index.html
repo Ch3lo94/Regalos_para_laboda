@@ -1,112 +1,79 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Catálogo de Regalos</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #fafafa;
-    margin: 0;
-    padding: 20px;
-  }
+  <base target="_top">
+  <script>
+    document.addEventListener("DOMContentLoaded", cargarRegalos);
 
-  h1 {
-    text-align: center;
-  }
+    function cargarRegalos() {
+      google.script.run.withSuccessHandler(renderRegalos).getRegalos();
+    }
 
-  /* CONTENEDOR GRID */
-  #catalogo {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 20px;
-    margin-top: 30px;
-  }
+    function renderRegalos(lista) {
+      const cont = document.getElementById("regalos");
+      cont.innerHTML = "";
 
-  /* TARJETAS */
-  .item {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: 0.2s ease;
-    border: 3px solid transparent;
-  }
+      lista.forEach(r => {
+        cont.innerHTML += `
+          <div class="item">
+            <img src="${r.imagen}" width="120">
+            <h3>${r.nombre}</h3>
+            <p>Stock: ${r.stock}</p>
+            <button onclick="selectRegalo(${r.id})">Elegir</button>
+          </div>
+        `;
+      });
+    }
 
-  .item:hover {
-    transform: scale(1.02);
-  }
+    let regaloSeleccionado = null;
+    function selectRegalo(id) {
+      regaloSeleccionado = id;
+      alert("Regalo seleccionado");
+    }
 
-  /* TARJETA SELECCIONADA */
-  .item.selected {
-    border: 3px solid #4CAF50;
-    box-shadow: 0 0 10px rgba(76,175,80,0.5);
-  }
+    function enviar() {
+      const nombre = document.getElementById("nombre").value;
+      const apellido = document.getElementById("apellido").value;
+      const email = document.getElementById("email").value;
 
-  .item img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 10px;
-  }
+      if (!regaloSeleccionado) {
+        alert("Elegí un regalo");
+        return;
+      }
 
-  .titulo {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 10px 0 5px;
-  }
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.ok) alert(res.msg);
+          else {
+            alert("Gracias por tu respuesta!");
+            location.reload();
+          }
+        })
+        .guardarRespuesta(nombre, apellido, email, regaloSeleccionado);
+    }
+  </script>
 
-  .descripcion {
-    font-size: 14px;
-    color: #555;
-  }
-</style>
+  <style>
+    .item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px;
+      text-align: center;
+      width: 200px;
+      display: inline-block;
+    }
+  </style>
 </head>
 
 <body>
+  <h2>Elegí tu regalo</h2>
 
-<h1>Catálogo de Regalos</h1>
-<div id="catalogo">Cargando...</div>
+  <input id="nombre" placeholder="Nombre"><br>
+  <input id="apellido" placeholder="Apellido"><br>
+  <input id="email" placeholder="Email"><br><br>
 
-<script>
-// ⭐⭐ PONÉ ACÁ LA URL DEL DEPLOY DEL WEBAPP ⭐⭐
-const API_URL = "TU_URL_DEL_WEBAPP"; // ejemplo: https://script.google.com/macros/s/AKfycbxxxx/exec
+  <div id="regalos">Cargando...</div>
 
-async function cargarCatalogo() {
-  try {
-    const response = await fetch(API_URL);
-    const lista = await response.json();
-
-    const contenedor = document.getElementById("catalogo");
-    contenedor.innerHTML = "";
-
-    lista.forEach(item => {
-      const card = document.createElement("div");
-      card.className = "item";
-
-      card.innerHTML = `
-        <img src="${item.imagen}" alt="${item.nombre}">
-        <div class="titulo">${item.nombre}</div>
-        <div class="descripcion">${item.descripcion}</div>
-      `;
-
-      // → Selección múltiple
-      card.addEventListener("click", () => {
-        card.classList.toggle("selected");
-      });
-
-      contenedor.appendChild(card);
-    });
-
-  } catch (error) {
-    document.getElementById("catalogo").innerHTML = "Error al cargar datos.";
-    console.error(error);
-  }
-}
-
-cargarCatalogo();
-</script>
-
+  <button onclick="enviar()">Enviar</button>
 </body>
 </html>
