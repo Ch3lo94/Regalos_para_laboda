@@ -1,164 +1,195 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <base target="_top">
-  <style>
-    body { font-family: Arial; }
+<meta charset="UTF-8">
+<title>Regalos de Boda</title>
 
-    .hidden { display: none; }
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
-    /* Tarjeta de regalo */
-    .item {
-      border: 2px solid #ccc;
-      padding: 10px;
-      margin: 10px;
-      width: 200px;
-      display: inline-block;
-      text-align: center;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+<style>
+  body {
+    margin:0;
+    background:#fafafa;
+    font-family:"Segoe UI", sans-serif;
+  }
 
-    .item img {
-      width: 120px;
-      height: auto;
-    }
+  .center {
+    text-align:center;
+    padding:30px;
+  }
 
-    /* Seleccionado */
-    .selected {
-      border: 3px solid #007bff;
-      box-shadow: 0 0 8px #007bff;
-    }
+  .welcome-img {
+    width:100%;
+    max-width:420px;
+    border-radius:20px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  }
 
-    /* Sin stock */
-    .disabled {
-      opacity: 0.4;
-      pointer-events: none;
-    }
-  </style>
+  .login-box {
+    margin-top:20px;
+  }
 
-  <script>
-    let seleccion = [];
+  .hidden { display:none; }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("formEmail").classList.remove("hidden");
-      document.getElementById("pantallaRegalos").classList.add("hidden");
-    });
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(260px,1fr));
+    gap: 25px;
+    padding: 20px;
+  }
 
-    // =============================
-    // 1️⃣ VALIDAR EMAIL
-    // =============================
-    function validarEmail() {
-      const email = document.getElementById("email").value.trim().toLowerCase();
+  .card {
+    background:white;
+    border-radius:14px;
+    overflow:hidden;
+    cursor:pointer;
+    border:3px solid transparent;
+    transition:.25s ease;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  }
 
-      if (email === "") {
-        alert("Ingresá tu email");
-        return;
-      }
+  .card img {
+    width:100%;
+    height:200px;
+    object-fit:cover;
+  }
 
-      google.script.run
-        .withSuccessHandler(r => {
-          if (r.yaRespondio) {
-            alert("Este correo ya respondió. Si lo borrás de Sheet puede volver a participar.");
-          } else {
-            cargarRegalos();
-            document.getElementById("formEmail").classList.add("hidden");
-            document.getElementById("pantallaRegalos").classList.remove("hidden");
-          }
-        })
-        .checkEmail(email);
-    }
+  .card-content {
+    padding:16px;
+  }
 
-    // =============================
-    // 2️⃣ CARGAR REGALOS
-    // =============================
-    function cargarRegalos() {
-      google.script.run.withSuccessHandler(renderRegalos).getRegalos();
-    }
+  .agotado {
+    opacity:0.4;
+    pointer-events:none;
+  }
 
-    function renderRegalos(lista) {
-      const cont = document.getElementById("regalos");
-      cont.innerHTML = "";
+  #confirm-btn {
+    display:block;
+    margin:25px auto;
+    padding:12px 30px;
+    background:#0077ff;
+    color:white;
+    border:none;
+    border-radius:12px;
+    font-size:18px;
+    cursor:pointer;
+  }
 
-      lista.forEach(r => {
-        const disabled = r.stockRestante <= 0 ? "disabled" : "";
-
-        cont.innerHTML += `
-          <div class="item ${disabled}" id="item-${r.id}" onclick="toggle(${r.id})">
-            <img src="${r.imagen}">
-            <h3>${r.nombre}</h3>
-          </div>
-        `;
-      });
-    }
-
-    // =============================
-    // 3️⃣ SELECCIÓN MÚLTIPLE
-    // =============================
-    function toggle(id) {
-      const card = document.getElementById("item-" + id);
-
-      if (seleccion.includes(id)) {
-        seleccion = seleccion.filter(x => x !== id);
-        card.classList.remove("selected");
-      } else {
-        seleccion.push(id);
-        card.classList.add("selected");
-      }
-    }
-
-    // =============================
-    // 4️⃣ ENVIAR RESPUESTA
-    // =============================
-    function enviar() {
-      const nombre = document.getElementById("nombre").value.trim();
-      const apellido = document.getElementById("apellido").value.trim();
-      const email = document.getElementById("email").value.trim().toLowerCase();
-
-      if (seleccion.length === 0) {
-        alert("Elegí al menos un regalo");
-        return;
-      }
-
-      google.script.run
-        .withSuccessHandler(r => {
-          if (!r.success) {
-            if (r.error === "email_ya_usado") alert("Este correo ya participó.");
-            if (r.error === "sin_stock") alert("Uno de los regalos ya no tiene stock.");
-          } else {
-            alert("¡Gracias por participar!");
-            location.reload();
-          }
-        })
-        .guardarRespuesta(nombre, apellido, email, seleccion);
-    }
-  </script>
+  #confirm-btn:disabled {
+    background:#aaa;
+    cursor:not-allowed;
+  }
+</style>
 </head>
 
 <body>
 
-  <!-- 1️⃣ PANTALLA DE EMAIL -->
-  <div id="formEmail">
-    <h2>Ingresá tu email</h2>
-    <input id="email" placeholder="Email"><br><br>
-    <button onclick="validarEmail()">Continuar</button>
+<!-- 🟦 PANTALLA DE BIENVENIDA CON LOGIN -->
+<div id="welcome" class="center">
+  <img id="foto-boda" class="welcome-img" src="https://photos.fife.usercontent.google.com/pw/AP1GczOITcq2NQlnv4tkONuJ3MWR4GDYCNC3gWcHDmzJcxcd-aIVqO8q_D5rjQ=w509-h679-s-no-gm?authuser=0">
+  <h2>Nos ayudarías mucho con estas cosas que nos faltan ❤️</h2>
+  <p>Por favor ingresá con tu cuenta de Google y seleccioná los regalos que deseas darnos.</p>
+
+  <div id="g_id_onload"
+    data-client_id="342769047778-jc52eh3n59a3vjocagmomi8pln5kbqv3.apps.googleusercontent.com"
+    data-callback="handleCredentialResponse">
   </div>
 
-  <!-- 2️⃣ PANTALLA DE REGALOS -->
-  <div id="pantallaRegalos" class="hidden">
-
-    <h2>Completá tus datos y elegí tus regalos</h2>
-
-    <input id="nombre" placeholder="Nombre"><br>
-    <input id="apellido" placeholder="Apellido"><br><br>
-
-    <h3>Regalos:</h3>
-    <div id="regalos">Cargando...</div>
-
-    <br><br>
-    <button onclick="enviar()">Enviar</button>
+  <div class="login-box g_id_signin"
+    data-type="standard"
+    data-size="large"
+    data-theme="filled_blue">
   </div>
+</div>
 
+<!-- 🟩 CATÁLOGO -->
+<div id="catalogo" class="hidden">
+  <h1 class="center">Elegí un regalo</h1>
+  <div id="grid" class="grid"></div>
+  <button id="confirm-btn" disabled>Confirmar selección</button>
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycby7tm3mzzCbNbYQXcwxxv8cK9nuahTTbuDvy-elbyihaURbbZerQGpyj9tEvnVpnxkY/exec";
+let usuario = null;
+let seleccion = [];
+
+// Google Login
+function handleCredentialResponse(response) {
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+
+  usuario = {
+    nombre: payload.name,
+    email: payload.email
+  };
+
+  document.getElementById("welcome").classList.add("hidden");
+  document.getElementById("catalogo").classList.remove("hidden");
+
+  cargarCatalogo();
+}
+
+async function cargarCatalogo() {
+  const res = await fetch(API);
+  const items = await res.json();
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+    if (item.stockRestante <= 0) card.classList.add("agotado");
+
+    card.innerHTML = `
+      <img src="${item.imagen}">
+      <div class="card-content">
+        <h3>${item.nombre}</h3>
+        <p>${item.descripcion}</p>
+        <small>Stock disponible: ${item.stockRestante}</small>
+      </div>
+    `;
+
+    card.onclick = () => toggle(item.id, card);
+    grid.appendChild(card);
+  });
+}
+
+function toggle(id, card) {
+  if (seleccion.includes(id)) {
+    seleccion = seleccion.filter(x => x !== id);
+    card.style.border = "3px solid transparent";
+  } else {
+    seleccion.push(id);
+    card.style.border = "3px solid #0077ff";
+  }
+
+  document.getElementById("confirm-btn").disabled = seleccion.length === 0;
+}
+
+document.getElementById("confirm-btn").onclick = async () => {
+  const resp = await fetch(API, {
+    method: "POST",
+    body: JSON.stringify({
+      nombre: usuario.nombre,
+      email: usuario.email,
+      seleccion
+    })
+  });
+
+  const r = await resp.json();
+  if (r.success) {
+    alert("¡Gracias! Tu elección fue guardada.");
+    seleccion = [];
+    cargarCatalogo();
+  } else {
+    alert("Error: " + r.error);
+  }
+};
+</script>
 </body>
 </html>
+
+
+
+
